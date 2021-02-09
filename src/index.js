@@ -35,7 +35,10 @@ template.innerHTML = `
   }
   
   [role="option"][aria-selected="true"] {
-    background: #bde4ff;
+    background: #bde4ff; 
+  }
+  [role="option"][aria-selected="true"]:focus-visible {
+    outline: 3px solid blanchedalmond; /* That'll show 'em */
   }
 
   button {
@@ -194,9 +197,13 @@ class CustomDropdown extends HTMLElement {
         this.open = !this.open;
         const selectedItem = this.shadowRoot.querySelectorAll("li")[
           this.$selectedItem
-        ].innerText;
-        let option = this.options[selectedItem];
+        ];
+        let option = this.options[selectedItem.innerText];
         this.$button.innerHTML = option.label;
+        this.$dropdownList.setAttribute(
+          "aria-activedescendant",
+          selectedItem.id
+        );
         this.open = !this.open;
         return;
 
@@ -213,7 +220,6 @@ class CustomDropdown extends HTMLElement {
         } else {
           this.$selectedItem = totalElements;
         }
-        console.log("selected", this.$selectedItem);
 
         this.focusToNextItem();
         return;
@@ -248,6 +254,7 @@ class CustomDropdown extends HTMLElement {
     ];
 
     this.$dropdownCurrentListItem.setAttribute("aria-selected", "true");
+    this.$dropdownCurrentListItem.focus();
   }
 
   /**
