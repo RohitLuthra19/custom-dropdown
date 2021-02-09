@@ -37,7 +37,7 @@ template.innerHTML = `
   [role="option"][aria-selected="true"] {
     background: #bde4ff;
   }
-    
+
   button {
     font-size: 16px;
   }
@@ -134,6 +134,8 @@ class CustomDropdown extends HTMLElement {
     this.$button = this.shadowRoot.querySelector("button");
     this.$dropdown = this.shadowRoot.querySelector(".dropdown");
     this.$dropdownList = this.shadowRoot.querySelector(".dropdown-list");
+    this.$dropdownListItem = null;
+    this.$selectedItem = 0;
 
     this.open = false;
   }
@@ -176,44 +178,130 @@ class CustomDropdown extends HTMLElement {
     this.render();
   }
 
+  focusNextListItem() {}
+  onDropdownListItemKeyUp(event) {
+    this.$dropdownSelectedListItem = this.shadowRoot.querySelector(
+      "li[aria-selected]"
+    );
+  }
+
   onKeyUp(event) {
     const key = event.which || event.keyCode;
+    const totalElements = this.shadowRoot.querySelectorAll("li").length - 1;
 
     switch (key) {
-      case KEY_CODES.UP:
+      case KEY_CODES.ENTER:
+        this.open = !this.open;
+        let option = this.options[e.target.innerText];
+        this.$button.innerHTML = option.label;
+        return;
+
       case KEY_CODES.DOWN:
-        evt.preventDefault();
-        this.onButtonClick();
-        break;
+        this.setOpenState();
+        this.$selectedItem++;
+        this.focusToNextItem();
+        return;
+
+      case KEY_CODES.UP:
+        this.open = !this.open;
+        if (this.$selectedItem !== 0) {
+          this.$selectedItem--;
+        } else {
+          this.$selectedItem = totalElements;
+        }
+        console.log("selected", this.$selectedItem);
+
+        this.focusToNextItem();
+        return;
+
+      case KEY_CODES.ESCAPE:
+        this.setCloseState();
+        return;
+
+      default:
+        return;
     }
   }
+
+  focusToNextItem() {
+    const totalElements = this.shadowRoot.querySelectorAll("li").length - 1;
+
+    if (this.$selectedItem === 0 || this.$selectedItem > totalElements) {
+      this.$selectedItem = 0;
+
+      this.$dropdownLastListItem = this.shadowRoot.querySelectorAll("li")[
+        totalElements
+      ];
+      this.$dropdownLastListItem.removeAttribute("aria-selected");
+    } else {
+      this.$dropdownPreviousListItem = this.shadowRoot.querySelectorAll("li")[
+        this.$selectedItem - 1
+      ];
+      this.$dropdownPreviousListItem.removeAttribute("aria-selected");
+    }
+    this.$dropdownCurrentListItem = this.shadowRoot.querySelectorAll("li")[
+      this.$selectedItem
+    ];
+
+    this.$dropdownCurrentListItem.setAttribute("aria-selected", "true");
+  }
+
   /**
    * On Dropdown Click
    */
   onButtonClick() {
-    console.log("Button clicked");
     this.open = !this.open;
-
-    this.$dropdownListItem = this.shadowRoot.querySelector("li");
-
     this.open ? this.setOpenState() : this.setCloseState();
+  }
+
+  handleListItemClick(e) {
+    let option = this.options[e.target.innerText];
+    this.$button.innerHTML = option.label;
+    this.$dropdownList.setAttribute("aria-activedescendant", e.target.id);
+
+    this.$selectedItem = Number(e.target.getAttribute("name"));
+    if (this.$selectedItem > 0) {
+      this.shadowRoot
+        .querySelectorAll("li")
+        [this.$selectedItem - 1].removeAttribute("aria-selected");
+    }
+
+    this.shadowRoot
+      .querySelectorAll("li")
+      [this.$selectedItem].setAttribute("aria-selected", "true");
+    this.setCloseState();
   }
 
   setOpenState() {
     this.$button.setAttribute("aria-expanded", "true");
     this.$dropdown.classList.add("open");
-    this.$dropdownList.setAttribute(
-      "aria-activedescendant",
-      this.$dropdownListItem.id
-    );
-    this.$dropdownListItem.setAttribute("aria-selected", "true");
+
+    if (this.$selectedItem === 0) {
+      this.$dropdownListItem = this.shadowRoot.querySelector("li");
+
+      this.$dropdownList.setAttribute(
+        "aria-activedescendant",
+        this.$dropdownListItem.id
+      );
+      this.$dropdownListItem.setAttribute("aria-selected", "true");
+      this.$dropdownListItem.focus();
+    }
+
+    const listItems = this.shadowRoot.querySelectorAll("li");
+
+    listItems.forEach((item) => {
+      item.addEventListener("click", this.handleListItemClick.bind(this));
+      item.addEventListener("keydown", this.onKeyUp.bind(this));
+      item.addEventListener("blur", () => this.setCloseState());
+    });
   }
 
   setCloseState() {
     this.$button.removeAttribute("aria-expanded");
     this.$dropdown.classList.remove("open");
-    this.$dropdownList.removeAttribute("aria-activedescendant");
+    /* this.$dropdownList.removeAttribute("aria-activedescendant");
     this.$dropdownListItem.removeAttribute("aria-selected");
+    this.$selectedItem = -1; */
   }
 
   /**
@@ -286,12 +374,13 @@ class CustomDropdown extends HTMLElement {
     this.$dropdownList.innerHTML = "";
 
     //Setting options as list item(li)
-    Object.keys(this.options || {}).forEach((key) => {
+    Object.keys(this.options || {}).forEach((key, index) => {
       let option = this.options[key];
       let $option = document.createElement("li");
 
       $option.innerHTML = option.label;
       $option.setAttribute("role", "option");
+      $option.setAttribute("name", index);
       $option.setAttribute("id", `dropdown_elem_${option.label}`);
 
       //$option.classList.add("");
