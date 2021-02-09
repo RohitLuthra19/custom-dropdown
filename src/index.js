@@ -192,8 +192,12 @@ class CustomDropdown extends HTMLElement {
     switch (key) {
       case KEY_CODES.ENTER:
         this.open = !this.open;
-        let option = this.options[e.target.innerText];
+        const selectedItem = this.shadowRoot.querySelectorAll("li")[
+          this.$selectedItem
+        ].innerText;
+        let option = this.options[selectedItem];
         this.$button.innerHTML = option.label;
+        this.open = !this.open;
         return;
 
       case KEY_CODES.DOWN:
