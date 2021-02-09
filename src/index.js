@@ -181,13 +181,6 @@ class CustomDropdown extends HTMLElement {
     this.render();
   }
 
-  focusNextListItem() {}
-  onDropdownListItemKeyUp(event) {
-    this.$dropdownSelectedListItem = this.shadowRoot.querySelector(
-      "li[aria-selected]"
-    );
-  }
-
   onKeyUp(event) {
     const key = event.which || event.keyCode;
     const totalElements = this.shadowRoot.querySelectorAll("li").length - 1;
